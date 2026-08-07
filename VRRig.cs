@@ -365,6 +365,7 @@ public class VRRig : MonoBehaviour, IWrappedSerializable, INetworkStruct, IPreDi
 	[SerializeField]
 	private Transform MouthPosition;
 
+	[SerializeField]
 	internal RigContainer rigContainer;
 
 	public Action<RigContainer> OnNameChanged;
@@ -1200,6 +1201,7 @@ public class VRRig : MonoBehaviour, IWrappedSerializable, INetworkStruct, IPreDi
 			myReplacementVoice = GetComponentInChildren<ReplacementVoice>();
 		}
 		myEyeExpressions = GetComponent<GorillaEyeExpressions>();
+		GetComponent<XRaySkeleton>()?.OnBuildInitialize();
 	}
 
 	private void Awake()
@@ -1929,6 +1931,7 @@ public class VRRig : MonoBehaviour, IWrappedSerializable, INetworkStruct, IPreDi
 			result.lastTouchedGroundAtTime = LastTouchedGroundAtNetworkTime;
 			result.lastHandTouchedGroundAtTime = LastHandTouchedGroundAtNetworkTime;
 		}
+		result.packedGTPlayerStats = GTPlayerStats.GetPackedValues();
 		return result;
 	}
 
@@ -2029,6 +2032,7 @@ public class VRRig : MonoBehaviour, IWrappedSerializable, INetworkStruct, IPreDi
 		LastHandTouchedGroundAtNetworkTime = data.lastHandTouchedGroundAtTime;
 		UpdateRopeData();
 		UpdateMovingMonkeBlockData();
+		rigContainer.PlayerStats = GTPlayerStats.UnPackValues(data.packedGTPlayerStats);
 		AddVelocityToQueue(syncPos, data.serverTimeStamp);
 	}
 
@@ -2101,6 +2105,7 @@ public class VRRig : MonoBehaviour, IWrappedSerializable, INetworkStruct, IPreDi
 		{
 			stream.SendNext(inputStruct.propHuntPosRot);
 		}
+		stream.SendNext(inputStruct.packedGTPlayerStats);
 	}
 
 	void IWrappedSerializable.OnSerializeRead(PhotonStream stream, PhotonMessageInfo info)
@@ -2161,6 +2166,7 @@ public class VRRig : MonoBehaviour, IWrappedSerializable, INetworkStruct, IPreDi
 		{
 			data.propHuntPosRot = (long)stream.ReceiveNext();
 		}
+		data.packedGTPlayerStats = (long)stream.ReceiveNext();
 		data.serverTimeStamp = info.SentServerTime;
 		SerializeReadShared(data);
 	}

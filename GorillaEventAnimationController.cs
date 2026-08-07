@@ -171,6 +171,22 @@ public class GorillaEventAnimationController : MonoBehaviour
 		StartPlaying(0f);
 	}
 
+	public void SetAnimationClip(int clip)
+	{
+		animationClipIndex = clip;
+	}
+
+	public void StartPlayingClip(float secondsPast)
+	{
+		animationTime = (lateStart = secondsPast);
+		playAnimation = true;
+	}
+
+	public void StartPlayingClip()
+	{
+		StartPlayingClip(0f);
+	}
+
 	private void OnEnable()
 	{
 		if (!(suspended <= 0f))
