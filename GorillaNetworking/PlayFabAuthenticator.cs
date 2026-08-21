@@ -191,6 +191,7 @@ public class PlayFabAuthenticator : MonoBehaviour
 		}
 		platform = ScriptableObject.CreateInstance<PlatformTagJoin>();
 		PlayFabSettings.CompressApiData = false;
+		_ = new byte[1];
 		if (screenDebugMode)
 		{
 			debugText.text = "";
@@ -233,11 +234,7 @@ public class PlayFabAuthenticator : MonoBehaviour
 	private void SetLoginFailed()
 	{
 		loginFailed = true;
-		NetworkSystem networkSystem = NetworkSystem.Instance;
-		if (!(networkSystem == null))
-		{
-			networkSystem.FinishAuthenticating();
-		}
+		NetworkSystem.Instance?.FinishAuthenticating();
 	}
 
 	private void Start()
@@ -304,7 +301,7 @@ public class PlayFabAuthenticator : MonoBehaviour
 	{
 		Debug.Log("authenticating with playFab!");
 		GorillaServer gorillaServer = GorillaServer.Instance;
-		if (gorillaServer != null && gorillaServer.FeatureFlagsReady)
+		if ((object)gorillaServer != null && gorillaServer.FeatureFlagsReady)
 		{
 			if (KIDManager.KidEnabled)
 			{
@@ -521,11 +518,11 @@ public class PlayFabAuthenticator : MonoBehaviour
 		}
 		if (obj.ErrorMessage == "The IP making this request is currently banned")
 		{
-			using (Dictionary<string, List<string>>.Enumerator enumerator2 = obj.ErrorDetails.GetEnumerator())
+			using (Dictionary<string, List<string>>.Enumerator enumerator = obj.ErrorDetails.GetEnumerator())
 			{
-				if (enumerator2.MoveNext())
+				if (enumerator.MoveNext())
 				{
-					KeyValuePair<string, List<string>> current2 = enumerator2.Current;
+					KeyValuePair<string, List<string>> current2 = enumerator.Current;
 					if (current2.Value[0] != "Indefinite")
 					{
 						gorillaComputer.GeneralFailureMessage("THIS IP HAS BEEN BANNED. YOU WILL NOT BE ABLE TO PLAY UNTIL THE BAN EXPIRES.\nREASON: " + current2.Key + "\nHOURS LEFT: " + (int)((DateTime.Parse(current2.Value[0]) - DateTime.UtcNow).TotalHours + 1.0));
@@ -740,14 +737,14 @@ public class PlayFabAuthenticator : MonoBehaviour
 				callback(obj);
 			}
 		}
-		else if (request.result == UnityWebRequest.Result.ProtocolError && request.responseCode != 400)
+		else if (request.result != UnityWebRequest.Result.ProtocolError || request.responseCode == 400)
 		{
-			retry = true;
-			Debug.LogError($"HTTP {request.responseCode} error: {request.error}");
+			retry = request.result != UnityWebRequest.Result.ConnectionError || true;
 		}
 		else
 		{
-			retry = request.result != UnityWebRequest.Result.ConnectionError || true;
+			retry = true;
+			Debug.LogError($"HTTP {request.responseCode} error: {request.error}");
 		}
 		if (retry)
 		{
@@ -791,7 +788,20 @@ public class PlayFabAuthenticator : MonoBehaviour
 		Debug.Log("[KID] Setting safety to: [" + isSafety + "]");
 		isSafeAccount = isSafety;
 		safetyType = SafetyType.None;
-		if (!isSafety)
+		if (isSafety)
+		{
+			if (isAutoSet)
+			{
+				PlayerPrefs.SetInt("autoSafety", 1);
+				safetyType = SafetyType.Auto;
+			}
+			else
+			{
+				PlayerPrefs.SetInt("optSafety", 1);
+				safetyType = SafetyType.OptIn;
+			}
+		}
+		else
 		{
 			if (isAutoSet)
 			{
@@ -802,16 +812,6 @@ public class PlayFabAuthenticator : MonoBehaviour
 				PlayerPrefs.SetInt("optSafety", 0);
 			}
 			PlayerPrefs.Save();
-		}
-		else if (isAutoSet)
-		{
-			PlayerPrefs.SetInt("autoSafety", 1);
-			safetyType = SafetyType.Auto;
-		}
-		else
-		{
-			PlayerPrefs.SetInt("optSafety", 1);
-			safetyType = SafetyType.OptIn;
 		}
 	}
 

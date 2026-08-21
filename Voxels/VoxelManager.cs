@@ -657,7 +657,7 @@ public class VoxelManager : NetworkComponent
 			_mineOpArray = new VoxelMineOperation[count * 2];
 		}
 		ops.CopyTo(start, _mineOpArray, 0, count);
-		return _mineOpArray.AsSpan(start, count);
+		return MemoryExtensions.AsSpan(_mineOpArray, start, count);
 	}
 
 	private static void SendNextPacketForChunk(ChunkInitState chunkState, NetPlayer player)
